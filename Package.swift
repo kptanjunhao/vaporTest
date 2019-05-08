@@ -4,8 +4,8 @@ import PackageDescription
 let package = Package(
     name: "Hello",
     targets: [
-        .target(name: "App", dependencies: ["Leaf", "Vapor"]),
-        .target(name: "Run", dependencies: ["App"]),
+        .init(name: "App", dependencies: ["Leaf", "Vapor"]),
+        .init(name: "Run", dependencies: ["App"]),
     ],
     dependencies: [
         // 💧 A server-side Swift web framework.
