@@ -9,10 +9,10 @@ let package = Package(
     ],
     dependencies: [
         // 💧 A server-side Swift web framework.
-        .package(url: "https://github.com/vapor/vapor.git", from: "3.0.0"),
+        .Package(url: "https://github.com/vapor/vapor.git", majorVersion: 3),
 
         // 🍃 An expressive, performant, and extensible templating language built for Swift.
-        .package(url: "https://github.com/vapor/leaf.git", from: "3.0.0"),
+        .Package(url: "https://github.com/vapor/leaf.git", majorVersion: 3),
     ]
 )
 
