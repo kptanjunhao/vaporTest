@@ -1,0 +1,91 @@
+<!doctype html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<link href="css/mui.css" rel="stylesheet" />
+		<script src="js/mui.js"></script>
+		<script type="text/javascript">
+			mui.init()
+		</script>
+		<style>
+			.item{
+				margin: 4px 4px;
+				width: 56px;
+				height: 39px;
+				text-align: center;
+			}
+		</style>
+	</head>
+
+	<body>
+		<div class="mui-button-row" id="title-box"></div>
+		<div class="mui-button-row" id="item-box"></div>
+	</body>
+	<script>
+		var datas = [];
+		var tempSelectData = {};
+		mui.ready(function() {
+			mui.ajax("/questions", {
+				success: function(resp) {
+					var data = JSON.parse(resp);
+					if (data.code == 0) {
+						datas = data.data.datas;
+						document.getElementById("title-box").innerHTML = data.data.title[0];
+						localStorage.datas = JSON.stringify(datas);
+						if(localStorage.tempSelectData){
+							tempSelectData = JSON.parse(localStorage.tempSelectData);
+						}else{
+							tempSelectData = {};
+						}
+						prepare();
+					} else {
+						mui("body").innerHTML = "<h1>数据出错，请联系管理员</h1>";
+					}
+				},
+				error: function(xhr, type, errorThrown) {
+					//异常处理；
+					console.log(type);
+				}
+			});
+		});
+		
+		function isAnswerCorrect(ans, cur) {
+			var isCorrect = ans.length == cur.length;
+			for (var i = 0; i < ans.length; ++i) {
+				var c = ans[i];
+				isCorrect = isCorrect && (cur.indexOf(c) > -1);
+			}
+			return isCorrect;
+		}
+		
+		function toItem(e){
+			var index = e.getAttribute("data");
+			mui.openWindow({
+			  url: "/question.html?index="+index,
+			});
+		}
+		
+		function prepare(){
+			var rs = "";
+			for(var i=0;i<datas.length;++i){
+				var extraClass = ""
+				var answer = datas[i].answer.toUpperCase();
+				var select = tempSelectData[i];
+				if(select){
+					if(isAnswerCorrect(answer,select)){
+						extraClass = "mui-btn-primary";
+					}else{
+						extraClass = "mui-btn-danger";
+					}
+				}
+				var item = "<button type='button' onclick='toItem(this)' class='mui-btn "+extraClass+" mui-btn-outlined item' data='"+i+"'>"+(i+1)+"</button>";
+				rs += item;
+			}
+			document.getElementById("item-box").innerHTML = rs;
+		}
+	</script>
+
+</html>

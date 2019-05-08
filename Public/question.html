@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>题库</title>
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<script src="js/mui.min.js"></script>
+		<link href="css/mui.min.css" rel="stylesheet" />
+		<script type="text/javascript" charset="utf-8">
+			mui.init();
+		</script>
+		<style>
+			.bottom-bar{
+				position: absolute;
+				margin: auto;
+				right: 11px;
+				bottom: 11px;
+			}
+		</style>
+	</head>
+	<body>
+		<div>
+			<div style="padding: 11px 11px;"><span id="id"></span>.<span id="title"></span></div>
+
+			<ul class="mui-table-view" id="options">
+
+			</ul>
+			<div class="mui-button-row bottom-bar">
+				<button type="button" class="mui-btn" onclick="totalView()">总览</button>
+				<button type="button" class="mui-btn" id="pre-btn" onclick="preq()">上一题</button>
+				<button type="button" class="mui-btn mui-btn-primary" id="confirm-btn" onclick="confirmClick(this)">确认</button>
+				<button type="button" class="mui-btn" id="next-btn" onclick="nextq()">下一题</button>
+			</div>
+		</div>
+	</body>
+	<script>
+		var datas = [];
+		var curIndex = 0;
+		var curSelect = "";
+		var tempSelectData = {};
+		
+		// 获取参数
+		function getQueryString(name) {
+		  var reg = new RegExp('(^|&)' + name + '=([^&]*)(&|$)', 'i');
+		  var r = window.location.search.substr(1).match(reg);
+		  if (r != null) {
+			return unescape(r[2]);
+		  }
+		  return null;
+		}
+		
+		function loadDatas(){
+			var urlIndex = getQueryString("index");
+			if(urlIndex && parseInt(urlIndex)){
+				curIndex = parseInt(urlIndex);
+			}
+			if(localStorage.tempSelectData){
+				tempSelectData = JSON.parse(localStorage.tempSelectData);
+			}else{
+				tempSelectData = {};
+			}
+			preapreData();
+			if(tempSelectData[curIndex]){
+				curSelect = tempSelectData[curIndex];
+				confirmClick();
+			}
+		}
+
+		mui.ready(function() {
+			if(localStorage.datas){
+				datas = JSON.parse(localStorage.datas);
+				loadDatas();
+				return;
+			}
+			mui.ajax("/questions", {
+				success: function(resp) {
+					var data = JSON.parse(resp);
+					if (data.code == 0) {
+						datas = data.data.datas;
+						loadDatas();
+					} else {
+						mui("body").innerHTML = "<h1>数据出错，请联系管理员</h1>";
+					}
+				},
+				error: function(xhr, type, errorThrown) {
+					//异常处理；
+					console.log(type);
+				}
+			});
+		});
+		
+		function totalView(){
+			mui.openWindow({
+			  url: "/",
+			});
+		}
+		
+		function nextq(){
+			if(datas.length > curIndex+1){
+				curIndex += 1;
+				preapreData();
+			}else{
+				mui.alert("没有下一题了!");
+			}
+			if(tempSelectData[curIndex]){
+				curSelect = tempSelectData[curIndex];
+				confirmClick()
+			}else{
+				setConfirmBtn(0);
+			}
+		}
+		
+		function preq(){
+			if(curIndex-1 >= 0){
+				curIndex -= 1;
+				preapreData();
+			}else{
+				mui.alert("这是第一题了!");
+			}
+			if(tempSelectData[curIndex]){
+				curSelect = tempSelectData[curIndex];
+				confirmClick()
+			}else{
+				setConfirmBtn(0);
+			}
+		}
+
+		function setConfirmBtn(statu){
+			var e = document.getElementById("confirm-btn");
+			if(statu == 0){
+				e.innerHTML = "确认"
+				e.classList.remove("mui-btn-success");
+				e.classList.remove("mui-btn-danger");
+				e.classList.add("mui-btn-primary");
+			}else if(statu == 1){
+				e.innerHTML = "答对"
+				e.classList.add("mui-btn-success");
+				e.classList.remove("mui-btn-primary");
+				e.classList.remove("mui-btn-danger");
+			}else if(statu == 2){
+				e.innerHTML = "答错"
+				e.classList.remove("mui-btn-success");
+				e.classList.remove("mui-btn-primary");
+				e.classList.add("mui-btn-danger");
+			}
+		}
+
+		function confirmClick() {
+			if (curSelect == "") {
+				return;
+			}
+			var item = datas[curIndex];
+			var answer = item.answer.toUpperCase().replace(/^\s+|\s+$/g, '');
+			if (isAnswerCorrect(answer, curSelect)) {
+				setConfirmBtn(1);
+				// 正确
+				var optes = document.getElementsByClassName("option-list");
+				for (var opti = 0; opti < optes.length; ++opti) {
+					var opte = optes[opti]
+					if (answer.indexOf(opte.getAttribute("data")) > -1) {
+						opte.style.color = "#fff";
+						opte.style.backgroundColor = "#53D769";
+					}
+				}
+			} else {
+				setConfirmBtn(2);
+				// 标出正确答案
+				var optes = document.getElementsByClassName("option-list");
+				for (var opti = 0; opti < optes.length; ++opti) {
+					var opte = optes[opti]
+					if (answer.indexOf(opte.getAttribute("data")) > -1) {
+						opte.style.color = "#fff";
+						opte.style.backgroundColor = "#53D769";
+					} else if (curSelect.indexOf(opte.getAttribute("data")) > -1) {
+						opte.style.color = "#fff";
+						opte.style.backgroundColor = "#DB5351";
+					}
+				}
+			}
+			tempSelectData[curIndex] = curSelect;
+			localStorage.tempSelectData = JSON.stringify(tempSelectData);
+			curSelect = "";
+		}
+
+		function isAnswerCorrect(ans, cur) {
+			var isCorrect = ans.length == cur.length;
+			for (var i = 0; i < ans.length; ++i) {
+				var c = ans[i];
+				isCorrect = isCorrect && (cur.indexOf(c) > -1);
+			}
+			return isCorrect;
+		}
+
+		function optionClick(e) {
+			// 如果开始选择,清除确认按钮样式.
+			setConfirmBtn(0);
+			// 如果是单选,清除选项先.
+			if (datas[curIndex].answer.length == 1) {
+				curSelect = "";
+				var optes = document.getElementsByClassName("option-list");
+				for (var opti = 0; opti < optes.length; ++opti) {
+					var opte = optes[opti]
+					opte.style.color = "#000"
+					opte.style.backgroundColor = "#fff";
+				}
+			}
+			var opt = e.getAttribute("data");
+			if (curSelect.indexOf(opt) > -1) {
+				curSelect = curSelect.replace(new RegExp(opt, 'g'), "");
+				e.style.color = "#000"
+				e.style.backgroundColor = "#fff";
+			} else {
+				curSelect += opt;
+				e.style.color = "#fff"
+				e.style.backgroundColor = "#157EFB";
+			}
+		}
+
+		function preapreData() {
+			var i = curIndex;
+			var item = datas[i];
+
+			mui("#id")[0].innerHTML = item.id;
+			mui("#title")[0].innerHTML = item.title;
+
+			var opts = "";
+			var options = ["A", "B", "C", "D", "E", "F"];
+			for (var oi = 0; oi < options.length; ++oi) {
+				var opa = item["option" + options[oi]];
+				if (opa != "") {
+					opts += "<li onclick='optionClick(this);' class='mui-table-view-cell option-list' data='" + options[oi] +
+						"'><span>" + options[oi] + ". </span>" + opa + "</li>";
+				}
+			}
+			mui("#options")[0].innerHTML = opts;
+
+		}
+	</script>
+</html>
